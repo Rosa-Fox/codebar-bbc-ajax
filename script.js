@@ -39,6 +39,31 @@ $(document).ready(function(){
 })
 
 
+function displayEpisode(broadcast){
+  var listItemHtml = "";
+  listItemHtml += "<h1>" + broadcast.programme.display_titles.title + "</h1>" 
+  listItemHtml += "<h3>" + broadcast.programme.display_titles.subtitle + "</h3>"
+  listItemHtml += "<p>" + broadcast.programme.short_synopsis + "</p>"
+  if (broadcast.programme.image) {
+    listItemHtml += "<img src=http://ichef.bbci.co.uk/images/ic/272x153/"+ broadcast.programme.image.pid +".jpg />";
+  } 
+  else {
+    listItemHtml += "<img src='http://placehold.it/272x153' />";
+  }
+  listItemHtml += "<p>Duration: " + broadcast.duration/60 + " minutes </p>"
+  var start_date = new Date(broadcast.start)
+  listItemHtml += "<p>" + start_date.toUTCString() + "</p>"
+
+  if (broadcast.programme.position){
+    listItemHtml += "<a href='#'>View upcoming episodes</a>"
+  }
+  else {
+    listItemHtml += "<p> No upcoming episode information at this moment </p>"
+  }
+  return listItemHtml
+}
+
+
 function getTomorrowsSchedule(event) {
  // call to retrieve TV schedule
   var programmeElement = $("#programmes");
@@ -53,22 +78,8 @@ function getTomorrowsSchedule(event) {
     $(".spinner").removeClass("display")
     $.each(data.broadcasts, function(index, broadcast){
     //genreElement.append("<li>" + category.title + "</li>");
-      var listItemHtml = "";
-      listItemHtml += "<h1>" + broadcast.programme.display_titles.title + "</h1>" 
-      listItemHtml += "<h3>" + broadcast.programme.display_titles.subtitle + "</h3>"
-      listItemHtml += "<p>" + broadcast.programme.short_synopsis + "</p>"
-      if (broadcast.programme.image) {
-        listItemHtml += "<img src=http://ichef.bbci.co.uk/images/ic/272x153/"+ broadcast.programme.image.pid +".jpg />";
-      } 
-      else {
-        listItemHtml += "<img src='http://placehold.it/272x153' />";
-      }
-      listItemHtml += "<p>Duration: " + broadcast.duration/60 + " minutes </p>"
-      var start_date = new Date(broadcast.start)
-      listItemHtml += "<p>" + start_date.toUTCString() + "</p>"
-      if (broadcast.programme.position){
-        listItemHtml += "<a href='#'>View upcoming episodes</a>"
-      }
+      var listItemHtml = displayEpisode(broadcast);
+
       var listItem = $("<li>");
       programmeElement.append(listItem.html(listItemHtml));
       listItem.find('a').click(function(){
@@ -76,10 +87,32 @@ function getTomorrowsSchedule(event) {
         //finds upcoming programmes and links to them
         //move things into separate functions
         //need a blank page... ajax... load when it is done etc
-        alert("working!");
+        var pid = broadcast.programme.programme.pid
+        getUpcomingEpisodes(pid)
       })
       console.log(broadcast);
     });
   });
   return true;
+}
+
+function getUpcomingEpisodes(pid){
+  var programmeElement = $("#programmes");
+  programmeElement.empty()
+  $(".spinner").addClass("display");
+  $(".active").removeClass("active");
+  $(event.target).addClass("active");
+  $.ajax({
+    url: "http://www.bbc.co.uk/programmes/" + pid + "/episodes/upcoming.json",
+    dataType: 'json'
+  }).done(function(data){
+  $(".spinner").removeClass("display");
+  $.each(data.broadcasts, function(index, broadcast){
+    //genreElement.append("<li>" + category.title + "</li>");
+    //listItemHtml will be produced by the displayEpisode function
+    var listItemHtml =  displayEpisode(broadcast)
+    var listItem = $("<li>");
+    programmeElement.append(listItem.html(listItemHtml));
+  });
+  });
 }
